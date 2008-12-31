@@ -19,6 +19,7 @@
 
    // Scores for the evaluation function
    Board.WINNER = 10000000;
+
    Board.WITH_4_PIECES_SPACE_BOTH_SIDES = 100000;
    Board.WITH_4_PIECES_SPACE_ONE_SIDE = 50000;
    Board.WITH_3_PIECES_SPACE_BOTH_SIDES = 10000;
@@ -222,10 +223,10 @@
          var x;
          var y;
          var cell;
-         var score;
          var totalScore = 0;
          var factor;
          var direction;
+
          for (y = 0; y < Board.BOARD_HEIGHT; y++) {
             for (x = 0; x < Board.BOARD_WIDTH; x++) {
                cell = this.getPiece(y, x);
@@ -243,12 +244,15 @@
 
                direction = Board._CHECK_VERTICAL;
                for (; direction <= Board._CHECK_LEFT_DIAGONAL; direction++) {
-                  score = factor * this._check(x, y, cell, direction);
+                  totalScore += factor * this._check(x, y, cell, direction);
 
-                  if (score >= Board.WINNER) {
+                  if (totalScore >= Board.WINNER) {
                      return Board.WINNER;
                   }
-                  totalScore += score;
+
+                  if (totalScore <= -Board.WINNER) {
+                     return -Board.WINNER;
+                  }
                }
             }
          }
@@ -293,22 +297,22 @@
    AI.prototype = {
       constructor: AI,
 
-      _best: function (bestMoveSoFar, move, piece) {
+      _best: function (bestMoveSoFar, move, piece, currentX, currentY) {
          if (!move) {
             return bestMoveSoFar;
-         }
-         if (!bestMoveSoFar) {
+         } else if (!bestMoveSoFar) {
             return move;
-         }
-         if (piece == Piece.PLAYER) {
+         } else if (piece == Piece.PLAYER) {
             if (move.score > bestMoveSoFar.score) {
-               return move;
+               bestMoveSoFar = move;
             }
          } else {
             if (move.score < bestMoveSoFar.score) {
-               return move;
+               bestMoveSoFar = move;
             }
          }
+         bestMoveSoFar.x = currentX;
+         bestMoveSoFar.y = currentY;
          return bestMoveSoFar;
       },
 
@@ -339,7 +343,7 @@
 
                   // this._moves.push({'board': board.toString(), 'value': move.score});
 
-                  bestMove = this._best(bestMove, move, piece);
+                  bestMove = this._best(bestMove, move, piece, x, y);
                   board.setPiece(y, x, Piece.EMPTY);
                }
             }
@@ -349,7 +353,7 @@
       },
 
       play: function (board, x, y) {
-         var DEPTH_LEVEL = 2;
+         var DEPTH_LEVEL = 3;
          var y;
          var x;
          var piece;
@@ -359,16 +363,16 @@
          if (piece == Piece.EMPTY) {
             board.setPiece(y, x, Piece.PLAYER);
             bestMove = this.simulatePlay(board, Piece.CPU, x, y, DEPTH_LEVEL);
-            board.setPiece(bestMove.row, bestMove.column, bestMove.piece);
+            board.setPiece(bestMove.row, bestMove.column, Piece.CPU);
          }
       }
    };
 
    var emptyBoardString = '0 0 0 0 0 0 0 0 0 0\n' + // 0
-                          '0 0 0 0 0 0 0 0 0 0\n' + // 1
+                          '0 0 0 0 1 0 0 0 0 0\n' + // 1
                           '0 0 0 0 0 0 0 0 0 0\n' + // 2
-                          '0 0 0 0 0 0 0 0 0 0\n' + // 3
-                          '0 0 0 0 0 0 0 0 0 0\n' + // 4
+                          '0 0 0 0 1 0 0 0 0 0\n' + // 3
+                          '0 0 0 0 1 0 0 0 0 0\n' + // 4
                           '0 0 0 0 1 0 0 0 0 0\n' + // 5
                           '0 0 0 0 0 0 0 0 0 0\n' + // 6
                           '0 0 0 0 0 0 0 0 0 0\n' + // 7
@@ -377,13 +381,28 @@
 
    var b = new Board();
    b.fromString(emptyBoardString);
+   console.log(b.evaluate());
 
+
+       emptyBoardString = '0 0 0 0 0 0 0 0 0 0\n' + // 0
+                          '0 0 0 0 1 0 0 0 0 0\n' + // 1
+                          '0 0 0 0 0 0 0 0 0 0\n' + // 2
+                          '0 0 0 0 1 0 0 0 0 0\n' + // 3
+                          '0 0 0 0 1 0 0 0 0 0\n' + // 4
+                          '0 0 0 0 1 0 0 0 0 0\n' + // 5
+                          '0 0 0 0 0 0 0 0 0 0\n' + // 6
+                          '0 0 0 0 0 0 0 0 0 0\n' + // 7
+                          '0 0 0 0 0 0 0 0 0 0\n' + // 8
+                          '0 0 0 0 0 0 0 0 0 0\n';
+
+   b.fromString(emptyBoardString);
+   console.log(b.evaluate());
+
+/*
    var ai = new AI();
-   ai.play(b, 4, 1);
-
+   ai.play(b, 2, 2);
    console.log(b.toString());
-   // console.log(b.evaluate());
-   
+*/
 })();
 
 /*
