@@ -278,24 +278,24 @@
 
    console.log(b2.evaluate());
    
-   function encodeChangeOnBoard(x, y, piece) {
+   function encodeBoardChange(x, y, piece) {
       return y << 6 | x << 2 | piece;
    }
    
-   function decodeChangeOnBoard(change) {
+   function decodeAndApplyBoardChange(board, change) {
       var y = change >> 6;
       var x = (change >> 2) & 0xf;
-      return [x, y, change & 3];
+      board.setPiece(y, x, change & 3);
    }
    
    function play(board) {
       var y;
       var x;
-      var undoStack = [];
+      var changes = [];
 
       for (y = 0; y < Board.BOARD_HEIGHT; y++) {
          for (x = 0; x < Board.BOARD_WIDTH; x++) {
-            board.get
+            board.getPiece(x, y)
          }
       }
    }
