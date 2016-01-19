@@ -5,5 +5,6 @@ The following is an image of the puzzle board in action:
 
 ![Five in a Row Puzzle](https://i.ytimg.com/vi/2m6NhwjFuXU/hqdefault.jpg "Five in a Row Machinarium's Puzzle")
 
-The idea for this repo is to hold a general solver for this mini game. The solver uses MinMax algorithm with alpha beta prunning
+It's a mini game played against the computer, who take turns marking the spaces with up-side-down screws in a 10×10 grid. To win you need to place five bolt heads in a horizontal, vertical, or diagonal row.
 
+The idea for this repo is to hold a general solver for the mini game, so it can be used to for future similar games/puzzles.
