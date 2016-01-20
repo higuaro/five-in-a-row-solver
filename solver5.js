@@ -277,17 +277,40 @@
    console.log(b2.toString());
 
    console.log(b2.evaluate());
-   
+
    function encodeBoardChange(x, y, piece) {
       return y << 6 | x << 2 | piece;
    }
-   
+
    function decodeAndApplyBoardChange(board, change) {
       var y = change >> 6;
       var x = (change >> 2) & 0xf;
       board.setPiece(y, x, change & 3);
    }
-   
+
+   function simulatePlayer(board, depthLevel) {
+      var y;
+      var x;
+      var changes = [];
+      var change;
+      var piece;
+
+      if (depthLevel == Board.MIN_MAX_DEPTH_LEVEL) {
+         return board.evaluate();
+      }
+
+      for (y = 0; y < Board.BOARD_HEIGHT; y++) {
+         for (x = 0; x < Board.BOARD_WIDTH; x++) {
+            piece = board.getPiece(y, x);
+            if (piece == Piece.EMPTY) {
+               change = encodeBoardChange(x, y, Piece.PLAYER);
+               board.setPiece(y, x, Piece.PLAYER);
+            }
+            return simulateCpu(board, depthLevel + 1);
+         }
+      }
+   }
+
    function play(board) {
       var y;
       var x;
