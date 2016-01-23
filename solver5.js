@@ -122,7 +122,7 @@
                   continuous = false;
                   spaces++;
                } else {
-                  if (continuous) { 
+                  if (continuous) {
                      continuousPieces++;
                   }
                   piecesFound++;
@@ -134,7 +134,7 @@
 
       _getVerticalPieceFromStep: function (board, x, y, step) {
          y += step;
-         if (y < 0 || y >= Board.BOARD_HEIGHT) { 
+         if (y < 0 || y >= Board.BOARD_HEIGHT) {
             return -1;
          }
          return board.getPiece(y, x);
@@ -142,7 +142,7 @@
 
       _getHorizontalPieceFromStep: function (board, x, y, step) {
          x += step;
-         if (x < 0 || x >= Board.BOARD_WIDTH) { 
+         if (x < 0 || x >= Board.BOARD_WIDTH) {
             return -1;
          }
          return board.getPiece(y, x);
@@ -178,8 +178,8 @@
          var continuous = 1;
          var c;
          var pieces;
-         
-         switch (direction) { 
+
+         switch (direction) {
             case Board._CHECK_VERTICAL:
                getPieceFromStep = this._getVerticalPieceFromStep;
             break;
@@ -245,7 +245,7 @@
                for (direction = Board._CHECK_VERTICAL; direction <= Board._CHECK_LEFT_DIAGONAL; direction++) {
 
                   score = factor * this._check(x, y, cell, direction);
-                  
+
                   if (score == Board.WINNER) {
                      return score;
                   }
@@ -288,7 +288,7 @@
       board.setPiece(y, x, change & 3);
    }
 
-   function simulatePlayer(board, depthLevel) {
+   function simulatePlay(board, depthLevel) {
       var y;
       var x;
       var changes = [];
