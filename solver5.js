@@ -47,33 +47,15 @@
       constructor: Board,
 
       copy: function (board) {
-         this.state = board.state.slice();
-      },
-
-      _getBoardCoordinates: function (row, col) {
-         var offset = (row * Board.BOARD_WIDTH + col) * 2;
-         var wordIndex = (offset / Board._INT_SIZE) | 0;
-         var bitIndex = offset % Board._INT_SIZE;
-         if (bitIndex > 0) {
-            wordIndex++;
-         }
-         return [wordIndex, bitIndex];
+         this.state = Array.apply(null, Array(100)).map(Number.prototype.valueOf, 0);
       },
 
       setPiece: function (row, col, piece) {
-         var coord = this._getBoardCoordinates(row, col);
-         var wordIndex = coord[0];
-         var bitIndex = coord[1];
-         var zeroMask = -1 & (~(3 << bitIndex));
-         this.state[wordIndex] &= zeroMask;
-         this.state[wordIndex] |= (piece & Piece.MASK) << bitIndex;
+         this.state[(row * 10) + col] = piece;
       },
 
       getPiece: function (row, col) {
-         var coord = this._getBoardCoordinates(row, col);
-         var wordIndex = coord[0];
-         var bitIndex = coord[1];
-         return (this.state[wordIndex] >> bitIndex) & Piece.MASK;
+         return this.state[(row * 10) + col];
       },
 
       fromString: function (boardStr) {
@@ -354,9 +336,9 @@
                if (board.getPiece(y, x) == Piece.EMPTY) {
                   board.setPiece(y, x, piece);
                   move = this.simulatePlay(board, enemy, x, y, depthLevel - 1);
-                  
-                  this._moves.push({'board': board.toString(), 'value': move.score});
-                  
+
+                  // this._moves.push({'board': board.toString(), 'value': move.score});
+
                   bestMove = this._best(bestMove, move, piece);
                   board.setPiece(y, x, Piece.EMPTY);
                }
@@ -367,13 +349,11 @@
       },
 
       play: function (board, x, y) {
-         var DEPTH_LEVEL = 1;
+         var DEPTH_LEVEL = 2;
          var y;
          var x;
          var piece;
          var bestMove;
-         
-         this._moves = [];
          
          piece = board.getPiece(y, x);
          if (piece == Piece.EMPTY) {
@@ -381,8 +361,6 @@
             bestMove = this.simulatePlay(board, Piece.CPU, x, y, DEPTH_LEVEL);
             board.setPiece(bestMove.row, bestMove.column, bestMove.piece);
          }
-         
-         console.log(this._moves);
       }
    };
 
