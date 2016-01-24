@@ -17,7 +17,6 @@
    Board.BOARD_HEIGHT = 10;
    Board._INT_SIZE = 32;
 
-
    // Scores for the evaluation function
    Board.WINNER = 10000000;
    Board.WITH_4_PIECES_SPACE_BOTH_SIDES = 100000;
@@ -26,13 +25,17 @@
    Board.WITH_3_PIECES_SPACE_ONE_SIDE = 5000;
    Board.WITH_2_PIECES_SPACE_BOTH_SIDES = 100;
    Board.WITH_2_PIECES_SPACE_ONE_SIDE = 20;
+   Board.WITH_1_PIECE_SPACE_BOTH_SIDES = 2;
+   Board.WITH_1_PIECE_SPACE_ONE_SIDE = 1;
 
    Board.SCORES = [ Board.WITH_4_PIECES_SPACE_BOTH_SIDES,
                     Board.WITH_4_PIECES_SPACE_ONE_SIDE,
                     Board.WITH_3_PIECES_SPACE_BOTH_SIDES,
                     Board.WITH_3_PIECES_SPACE_ONE_SIDE,
                     Board.WITH_2_PIECES_SPACE_BOTH_SIDES,
-                    Board.WITH_2_PIECES_SPACE_ONE_SIDE ];
+                    Board.WITH_2_PIECES_SPACE_ONE_SIDE, 
+                    Board.WITH_1_PIECE_SPACE_BOTH_SIDES, 
+                    Board.WITH_1_PIECE_SPACE_ONE_SIDE ];
 
    // Directions for the check
    Board._CHECK_VERTICAL = 1;
@@ -61,6 +64,8 @@
          var coord = this._getBoardCoordinates(row, col);
          var wordIndex = coord[0];
          var bitIndex = coord[1];
+         var zeroMask = -1 & (~(3 << bitIndex));
+         this.state[wordIndex] &= zeroMask;
          this.state[wordIndex] |= (piece & Piece.MASK) << bitIndex;
       },
 
@@ -206,11 +211,15 @@
          piecesFoundDown = t[1];
          spacesDown = t[2];
 
+         if (continuous == 1 && (spacesDown + spacesUp) < 6) {
+            continuous = 0;
+         }
+
          if (continuous >= 5) {
             // Winner board
             return Board.WINNER;
          } else {
-            for (c = 4; c >= 2; c--) {
+            for (c = 4; c >= 1; c--) {
                pieces = c;
                if (pieces === continuous) {
                   if (piecesFoundDown + piecesFoundUp + 1 > continuous) {
@@ -239,15 +248,23 @@
             for (x = 0; x < Board.BOARD_WIDTH; x++) {
                cell = this.getPiece(y, x);
                if (cell == Piece.EMPTY) {
+                  // We ignore the empty cells as they don't add value to the 
+                  // board (wow, that was so easy to explain)
                   continue;
                }
+               
+               // Ok, this is not that easy to explain, 'factor' changes the 
+               // sign of whatever result we got during the evaluation of the 
+               // board, we want negative numbers to be results more favorale 
+               // for the computer and positive numbers for the player
                factor = (cell == Piece.CPU) ? -1 : 1;
-               for (direction = Board._CHECK_VERTICAL; direction <= Board._CHECK_LEFT_DIAGONAL; direction++) {
 
+               direction = Board._CHECK_VERTICAL;
+               for (; direction <= Board._CHECK_LEFT_DIAGONAL; direction++) {
                   score = factor * this._check(x, y, cell, direction);
 
-                  if (score == Board.WINNER) {
-                     return score;
+                  if (score >= Board.WINNER) {
+                     return Board.WINNER;
                   }
                   totalScore += score;
                }
@@ -255,6 +272,118 @@
          }
          return totalScore;
       },
+
+      readFromHtml: function (tableId) {
+         
+      },
+
+      draw: function (tableId) {
+         var html = '<table id="' + tableId + '">';
+         var x;
+         var y;
+         var cell;
+
+         for (y = 0; y < Board.BOARD_HEIGHT; y++) {
+            html += '<tr>';
+            for (x = 0; x < Board.BOARD_WIDTH; x++) {
+               html += '<td>';
+               cell = this.getPiece(y, x);
+               switch (cell) {
+                  case Piece.PLAYER:
+                     html += 'X';
+                  break;
+                  case Piece.PLAYER:
+                     html += 'O';
+                  break;
+               }
+               html += '<td>';
+            }
+            html += '</tr>';
+         }
+
+         html += '</table>';
+      }
+   };
+
+   function AI() {
+   }
+   
+   AI.prototype = {
+      constructor: AI,
+
+      _best: function (bestMoveSoFar, move, piece) {
+         if (!move) {
+            return bestMoveSoFar;
+         }
+         if (!bestMoveSoFar) {
+            return move;
+         }
+         if (piece == Piece.PLAYER) {
+            if (move.score > bestMoveSoFar.score) {
+               return move;
+            }
+         } else {
+            if (move.score < bestMoveSoFar.score) {
+               return move;
+            }
+         }
+         return bestMoveSoFar;
+      },
+
+      simulatePlay: function (board, piece, x, y, depthLevel) {
+//debugger;
+         var y;
+         var x;
+         var piece;
+         var bestMove;
+         var move;
+
+         var enemy = piece ^ Piece.MASK;
+
+         if (depthLevel == 0) {
+            return { 
+                       'score': board.evaluate(),
+                       'row': y,
+                       'column': x,
+                       'piece': enemy
+                    }
+         }
+
+         for (y = 0; y < Board.BOARD_HEIGHT; y++) {
+            for (x = 0; x < Board.BOARD_WIDTH; x++) {
+               if (board.getPiece(y, x) == Piece.EMPTY) {
+                  board.setPiece(y, x, piece);
+                  move = this.simulatePlay(board, enemy, x, y, depthLevel - 1);
+                  
+                  this._moves.push({'board': board.toString(), 'value': move.score});
+                  
+                  bestMove = this._best(bestMove, move, piece);
+                  board.setPiece(y, x, Piece.EMPTY);
+               }
+            }
+         }
+
+         return bestMove;
+      },
+
+      play: function (board, x, y) {
+         var DEPTH_LEVEL = 1;
+         var y;
+         var x;
+         var piece;
+         var bestMove;
+         
+         this._moves = [];
+         
+         piece = board.getPiece(y, x);
+         if (piece == Piece.EMPTY) {
+            board.setPiece(y, x, Piece.PLAYER);
+            bestMove = this.simulatePlay(board, Piece.CPU, x, y, DEPTH_LEVEL);
+            board.setPiece(bestMove.row, bestMove.column, bestMove.piece);
+         }
+         
+         console.log(this._moves);
+      }
    };
 
    var emptyBoardString = '0 0 0 0 0 0 0 0 0 0\n' + // 0
@@ -262,66 +391,21 @@
                           '0 0 0 0 0 0 0 0 0 0\n' + // 2
                           '0 0 0 0 0 0 0 0 0 0\n' + // 3
                           '0 0 0 0 0 0 0 0 0 0\n' + // 4
-                          '0 0 0 0 0 0 0 0 0 0\n' + // 5
+                          '0 0 0 0 1 0 0 0 0 0\n' + // 5
                           '0 0 0 0 0 0 0 0 0 0\n' + // 6
                           '0 0 0 0 0 0 0 0 0 0\n' + // 7
                           '0 0 0 0 0 0 0 0 0 0\n' + // 8
                           '0 0 0 0 0 0 0 0 0 0\n';
 
    var b = new Board();
-   b.fromString(emptyBoardString); // 9
+   b.fromString(emptyBoardString);
+
+   var ai = new AI();
+   ai.play(b, 4, 1);
+
    console.log(b.toString());
-
-   var b2 = new Board();
-   b2.copy(b);
-   console.log(b2.toString());
-
-   console.log(b2.evaluate());
-
-   function encodeBoardChange(x, y, piece) {
-      return y << 6 | x << 2 | piece;
-   }
-
-   function decodeAndApplyBoardChange(board, change) {
-      var y = change >> 6;
-      var x = (change >> 2) & 0xf;
-      board.setPiece(y, x, change & 3);
-   }
-
-   function simulatePlay(board, depthLevel) {
-      var y;
-      var x;
-      var changes = [];
-      var change;
-      var piece;
-
-      if (depthLevel == Board.MIN_MAX_DEPTH_LEVEL) {
-         return board.evaluate();
-      }
-
-      for (y = 0; y < Board.BOARD_HEIGHT; y++) {
-         for (x = 0; x < Board.BOARD_WIDTH; x++) {
-            piece = board.getPiece(y, x);
-            if (piece == Piece.EMPTY) {
-               change = encodeBoardChange(x, y, Piece.PLAYER);
-               board.setPiece(y, x, Piece.PLAYER);
-            }
-            return simulateCpu(board, depthLevel + 1);
-         }
-      }
-   }
-
-   function play(board) {
-      var y;
-      var x;
-      var changes = [];
-
-      for (y = 0; y < Board.BOARD_HEIGHT; y++) {
-         for (x = 0; x < Board.BOARD_WIDTH; x++) {
-            board.getPiece(x, y)
-         }
-      }
-   }
+   // console.log(b.evaluate());
+   
 })();
 
 /*
