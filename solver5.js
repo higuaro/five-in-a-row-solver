@@ -219,7 +219,7 @@
          return 0;
       },
 
-      evaluate: function () {
+      evaluate: function (depthLevel) {
          var x;
          var y;
          var cell;
@@ -235,11 +235,11 @@
                   // board (wow, that was so easy to explain)
                   continue;
                }
-               
-               // Ok, this is not that easy to explain, 'factor' changes the 
-               // sign of whatever result we got during the evaluation of the 
-               // board, we want negative numbers to be results more favorale 
-               // for the computer and positive numbers for the player
+
+               // 'factor' changes the sign of whatever result we got during 
+               // the evaluation of the board, we want negative numbers to be 
+               // results more favorale for the computer and positive numbers 
+               // for the player
                factor = (cell == Piece.CPU) ? -1 : 1;
 
                direction = Board._CHECK_VERTICAL;
@@ -254,6 +254,13 @@
                      return -Board.WINNER;
                   }
                }
+            }
+         }
+         if (totalScore != 0) {
+            if (totalScore < 0) {
+               return Math.min(totalScore + depthLevel * 7, 0);
+            } else {
+               return Math.max(totalScore - depthLevel * 7, 0);
             }
          }
          return totalScore;
@@ -292,6 +299,7 @@
    };
 
    function AI() {
+      this.DEPTH_LEVEL = 3;
    }
    
    AI.prototype = {
@@ -326,22 +334,22 @@
 
          var enemy = piece ^ Piece.MASK;
 
-         if (depthLevel == 0) {
+         if (depthLevel == this.DEPTH_LEVEL) {
             return { 
-                       'score': board.evaluate(),
+                       'score': board.evaluate(depthLevel),
                        'row': y,
                        'column': x,
                        'piece': enemy
-                    }
+                    };
          }
 
          for (y = 0; y < Board.BOARD_HEIGHT; y++) {
             for (x = 0; x < Board.BOARD_WIDTH; x++) {
                if (board.getPiece(y, x) == Piece.EMPTY) {
                   board.setPiece(y, x, piece);
-                  move = this.simulatePlay(board, enemy, x, y, depthLevel - 1);
-
-                  // this._moves.push({'board': board.toString(), 'value': move.score});
+// if (y == 2 && x == 4) 
+//    debugger;
+                  move = this.simulatePlay(board, enemy, x, y, depthLevel + 1);
 
                   bestMove = this._best(bestMove, move, piece, x, y);
                   board.setPiece(y, x, Piece.EMPTY);
@@ -362,7 +370,7 @@
          piece = board.getPiece(y, x);
          if (piece == Piece.EMPTY) {
             board.setPiece(y, x, Piece.PLAYER);
-            bestMove = this.simulatePlay(board, Piece.CPU, x, y, DEPTH_LEVEL);
+            bestMove = this.simulatePlay(board, Piece.CPU, x, y, 0);
             board.setPiece(bestMove.row, bestMove.column, Piece.CPU);
          }
       }
@@ -381,28 +389,13 @@
 
    var b = new Board();
    b.fromString(emptyBoardString);
-   console.log(b.evaluate());
+   console.log(b.evaluate(1));
 
 
-       emptyBoardString = '0 0 0 0 0 0 0 0 0 0\n' + // 0
-                          '0 0 0 0 1 0 0 0 0 0\n' + // 1
-                          '0 0 0 0 0 0 0 0 0 0\n' + // 2
-                          '0 0 0 0 1 0 0 0 0 0\n' + // 3
-                          '0 0 0 0 1 0 0 0 0 0\n' + // 4
-                          '0 0 0 0 1 0 0 0 0 0\n' + // 5
-                          '0 0 0 0 0 0 0 0 0 0\n' + // 6
-                          '0 0 0 0 0 0 0 0 0 0\n' + // 7
-                          '0 0 0 0 0 0 0 0 0 0\n' + // 8
-                          '0 0 0 0 0 0 0 0 0 0\n';
-
-   b.fromString(emptyBoardString);
-   console.log(b.evaluate());
-
-/*
    var ai = new AI();
    ai.play(b, 2, 2);
    console.log(b.toString());
-*/
+
 })();
 
 /*
