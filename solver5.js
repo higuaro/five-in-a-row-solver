@@ -219,6 +219,61 @@
          return 0;
       },
 
+      insideBoard: function (x, y) {
+         return x >= 0 && x < Board.BOARD_WIDTH && 
+                 y >= 0 && y < Board.BOARD_HEIGHT;
+      },
+
+      isTerminal: function () {
+         var x;
+         var y;
+         var nx
+         var i;
+         var cell1;
+         var cell2;
+         var cell;
+         var vertical;
+         var horizontal;
+         var diagonal1;
+         var diagonal2;
+         for (y = 0; y < Board.BOARD_HEIGHT; y++) {
+            for (x = 0; x < Board.BOARD_WIDTH; x++) { 
+               cell1 = this.getPiece(y, x);
+               cell2 = this.getPiece(y + 4, x);
+               if (cell1 != Piece.EMPTY || cell2 != Piece.EMPTY) {
+                  vertical = horizontal = diagonal1 = 0;
+                  if (cell1 != Piece.EMPTY) {
+                     vertical = horizontal = diagonal1 = 1;
+                  }
+                  diagonal2 = cell2 != Piece.EMPTY ? 1 : 0;
+                  for (i = 1; i <= 4; i++) {
+                     if (this.insideBoard(y + i, x) && 
+                         this.getPiece(y + i, x) == cell1) {
+                        vertical++;
+                     }
+                     if (this.insideBoard(y, x + i) && 
+                         this.getPiece(y, x + i) == cell1) {
+                        horizontal++;
+                     }
+                     if (this.insideBoard(y + i, x + i) &&
+                         this.getPiece(y + i, x + i) == cell1) {
+                        diagonal1++;
+                     }
+                     if (this.insideBoard(y + 4 - i, x + i) && 
+                         this.getPiece(y + 4 - i, x + i) == cell2) {
+                        diagonal2++;
+                     }
+                  }
+                  if (vertical == 5 || horizontal == 5 || 
+                      diagonal1 == 5 || diagonal2 == 5) {
+                      return true;
+                  }
+               }
+            }
+         }
+         return false;
+      },
+
       evaluate: function (depthLevel) {
          var x;
          var y;
@@ -247,20 +302,24 @@
                   totalScore += factor * this._check(x, y, cell, direction);
 
                   if (totalScore >= Board.WINNER) {
-                     return Board.WINNER;
+                     return this.punishDepthLevel(Board.WINNER, depthLevel);
                   }
 
                   if (totalScore <= -Board.WINNER) {
-                     return -Board.WINNER;
+                     return this.punishDepthLevel(-Board.WINNER, depthLevel);
                   }
                }
             }
          }
+         return this.punishDepthLevel(totalScore, depthLevel);
+      },
+
+      punishDepthLevel: function (totalScore, depthLevel) {
          if (totalScore != 0) {
             if (totalScore < 0) {
-               return Math.min(totalScore + depthLevel * 7, 0);
+               return Math.min(totalScore + depthLevel * 10, 0);
             } else {
-               return Math.max(totalScore - depthLevel * 7, 0);
+               return Math.max(totalScore - depthLevel * 10, 0);
             }
          }
          return totalScore;
@@ -268,6 +327,13 @@
 
       readFromHtml: function (tableId) {
          
+      },
+
+      _toString: function (x, y, p) {
+         this.setPiece(y, x, p);
+         var s = this.toString();
+         this.setPiece(y, x, Piece.EMPTY);
+         return s;
       },
 
       draw: function (tableId) {
@@ -299,7 +365,7 @@
    };
 
    function AI() {
-      this.DEPTH_LEVEL = 3;
+      this.DEPTH_LEVEL = 2;
    }
    
    AI.prototype = {
@@ -331,15 +397,16 @@
          var piece;
          var bestMove;
          var move;
-
+// var a = [];
          var enemy = piece ^ Piece.MASK;
 
-         if (depthLevel == this.DEPTH_LEVEL) {
+         if (depthLevel == this.DEPTH_LEVEL || board.isTerminal()) {
             return { 
                        'score': board.evaluate(depthLevel),
                        'row': y,
                        'column': x,
-                       'piece': enemy
+                       'piece': enemy,
+                       'b': board._toString(x, y, enemy)
                     };
          }
 
@@ -350,38 +417,38 @@
 // if (y == 2 && x == 4) 
 //    debugger;
                   move = this.simulatePlay(board, enemy, x, y, depthLevel + 1);
-
+// a.push(move);
                   bestMove = this._best(bestMove, move, piece, x, y);
                   board.setPiece(y, x, Piece.EMPTY);
                }
             }
          }
+// console.log(a);
 
          return bestMove;
       },
 
       play: function (board, x, y) {
-         var DEPTH_LEVEL = 3;
          var y;
          var x;
          var piece;
          var bestMove;
-         
+
          piece = board.getPiece(y, x);
          if (piece == Piece.EMPTY) {
             board.setPiece(y, x, Piece.PLAYER);
-            bestMove = this.simulatePlay(board, Piece.CPU, x, y, 0);
+            bestMove = this.simulatePlay(board, Piece.CPU, x, y, -1);
             board.setPiece(bestMove.row, bestMove.column, Piece.CPU);
          }
       }
    };
 
    var emptyBoardString = '0 0 0 0 0 0 0 0 0 0\n' + // 0
-                          '0 0 0 0 1 0 0 0 0 0\n' + // 1
-                          '0 0 0 0 0 0 0 0 0 0\n' + // 2
-                          '0 0 0 0 1 0 0 0 0 0\n' + // 3
-                          '0 0 0 0 1 0 0 0 0 0\n' + // 4
-                          '0 0 0 0 1 0 0 0 0 0\n' + // 5
+                          '0 0 0 0 2 0 0 0 0 0\n' + // 1
+                          '0 0 0 0 2 0 0 0 0 0\n' + // 2
+                          '0 0 0 0 0 0 0 0 0 0\n' + // 3
+                          '0 0 0 0 2 0 0 0 0 0\n' + // 4
+                          '0 0 0 0 2 0 0 0 0 0\n' + // 5
                           '0 0 0 0 0 0 0 0 0 0\n' + // 6
                           '0 0 0 0 0 0 0 0 0 0\n' + // 7
                           '0 0 0 0 0 0 0 0 0 0\n' + // 8
@@ -390,7 +457,7 @@
    var b = new Board();
    b.fromString(emptyBoardString);
    console.log(b.evaluate(1));
-
+   console.log(b.isTerminal());
 
    var ai = new AI();
    ai.play(b, 2, 2);
