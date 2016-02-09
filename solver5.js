@@ -365,7 +365,7 @@
    };
 
    function AI() {
-      this.DEPTH_LEVEL = 2;
+      this.DEPTH_LEVEL = 3;
    }
    
    AI.prototype = {
@@ -397,7 +397,7 @@
          var piece;
          var bestMove;
          var move;
-// var a = [];
+var a = [];
          var enemy = piece ^ Piece.MASK;
 
          if (depthLevel == this.DEPTH_LEVEL || board.isTerminal()) {
@@ -414,16 +414,22 @@
             for (x = 0; x < Board.BOARD_WIDTH; x++) {
                if (board.getPiece(y, x) == Piece.EMPTY) {
                   board.setPiece(y, x, piece);
-// if (y == 2 && x == 4) 
-//    debugger;
+if (y == 4 && x == 3 && depthLevel == 0)
+    debugger;
                   move = this.simulatePlay(board, enemy, x, y, depthLevel + 1);
-// a.push(move);
+
+if (depthLevel == 0) a.push(move);
+
                   bestMove = this._best(bestMove, move, piece, x, y);
                   board.setPiece(y, x, Piece.EMPTY);
                }
             }
          }
-// console.log(a);
+
+if (depthLevel == 0) { 
+   console.log(a);
+   console.log(bestMove);
+}
 
          return bestMove;
       },
@@ -437,14 +443,15 @@
          piece = board.getPiece(y, x);
          if (piece == Piece.EMPTY) {
             board.setPiece(y, x, Piece.PLAYER);
-            bestMove = this.simulatePlay(board, Piece.CPU, x, y, -1);
+            bestMove = this.simulatePlay(board, Piece.CPU, x, y, 0);
+console.log('best move:', bestMove);
             board.setPiece(bestMove.row, bestMove.column, Piece.CPU);
          }
       }
    };
 
    var emptyBoardString = '0 0 0 0 0 0 0 0 0 0\n' + // 0
-                          '0 0 0 0 2 0 0 0 0 0\n' + // 1
+                          '0 0 0 0 0 0 0 0 0 0\n' + // 1
                           '0 0 0 0 2 0 0 0 0 0\n' + // 2
                           '0 0 0 0 0 0 0 0 0 0\n' + // 3
                           '0 0 0 0 2 0 0 0 0 0\n' + // 4
@@ -452,15 +459,15 @@
                           '0 0 0 0 0 0 0 0 0 0\n' + // 6
                           '0 0 0 0 0 0 0 0 0 0\n' + // 7
                           '0 0 0 0 0 0 0 0 0 0\n' + // 8
-                          '0 0 0 0 0 0 0 0 0 0\n';
+                          '0 0 0 0 0 0 0 0 0 0';
 
    var b = new Board();
    b.fromString(emptyBoardString);
-   console.log(b.evaluate(1));
+   console.log(b.evaluate(0));
    console.log(b.isTerminal());
 
    var ai = new AI();
-   ai.play(b, 2, 2);
+   ai.play(b, 4, 1);
    console.log(b.toString());
 
 })();
