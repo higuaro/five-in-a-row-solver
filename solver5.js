@@ -10,7 +10,7 @@
    Piece.MASK = 3;
 
    function Board() {
-      this.state = [0, 0, 0, 0, 0, 0, 0];
+      this.state = Array.apply(null, Array(100)).map(Number.prototype.valueOf, 0);
    }
 
    Board.BOARD_WIDTH = 10;
@@ -46,10 +46,6 @@
 
    Board.prototype = {
       constructor: Board,
-
-      copy: function (board) {
-         this.state = Array.apply(null, Array(100)).map(Number.prototype.valueOf, 0);
-      },
 
       setPiece: function (row, col, piece) {
          this.state[(row * 10) + col] = piece;
@@ -227,7 +223,7 @@
       isTerminal: function () {
          var x;
          var y;
-         var nx
+         var nx;
          var i;
          var cell1;
          var cell2;
@@ -325,10 +321,6 @@
          return totalScore;
       },
 
-      readFromHtml: function (tableId) {
-         
-      },
-
       _toString: function (x, y, p) {
          this.setPiece(y, x, p);
          var s = this.toString();
@@ -336,8 +328,8 @@
          return s;
       },
 
-      draw: function (tableId) {
-         var html = '<table id="' + tableId + '">';
+      toHtml: function () {
+         var html = '<table class="board">';
          var x;
          var y;
          var cell;
@@ -345,27 +337,29 @@
          for (y = 0; y < Board.BOARD_HEIGHT; y++) {
             html += '<tr>';
             for (x = 0; x < Board.BOARD_WIDTH; x++) {
-               html += '<td>';
+               html += '<td class="board-cell" onclick="play(' + y + ', ' + x + ')">';
                cell = this.getPiece(y, x);
                switch (cell) {
                   case Piece.PLAYER:
                      html += 'X';
                   break;
-                  case Piece.PLAYER:
+                  case Piece.CPU:
                      html += 'O';
                   break;
                }
-               html += '<td>';
+               html += '</td>';
             }
             html += '</tr>';
          }
 
          html += '</table>';
+         return html;
       }
    };
 
    function AI() {
-      this.DEPTH_LEVEL = 3;
+      this.DEPTH_LEVEL = 4;
+      this._INFINITY = 9999999999;
    }
    
    AI.prototype = {
@@ -379,25 +373,25 @@
          } else if (piece == Piece.PLAYER) {
             if (move.score > bestMoveSoFar.score) {
                bestMoveSoFar = move;
+               bestMoveSoFar.column = currentX; 
+               bestMoveSoFar.row = currentY;
             }
          } else {
             if (move.score < bestMoveSoFar.score) {
                bestMoveSoFar = move;
+               bestMoveSoFar.column = currentX; 
+               bestMoveSoFar.row = currentY;
             }
          }
-         bestMoveSoFar.x = currentX;
-         bestMoveSoFar.y = currentY;
          return bestMoveSoFar;
       },
 
-      simulatePlay: function (board, piece, x, y, depthLevel) {
-//debugger;
+      simulatePlay: function (board, piece, x, y, depthLevel, alpha, betha) {
          var y;
          var x;
          var piece;
          var bestMove;
          var move;
-var a = [];
          var enemy = piece ^ Piece.MASK;
 
          if (depthLevel == this.DEPTH_LEVEL || board.isTerminal()) {
@@ -414,23 +408,36 @@ var a = [];
             for (x = 0; x < Board.BOARD_WIDTH; x++) {
                if (board.getPiece(y, x) == Piece.EMPTY) {
                   board.setPiece(y, x, piece);
-if (y == 4 && x == 3 && depthLevel == 0)
-    debugger;
-                  move = this.simulatePlay(board, enemy, x, y, depthLevel + 1);
 
-if (depthLevel == 0) a.push(move);
+                  move = this.simulatePlay(board, enemy, x, y, depthLevel + 1, alpha, betha);
 
                   bestMove = this._best(bestMove, move, piece, x, y);
+
                   board.setPiece(y, x, Piece.EMPTY);
+                  // If node is minimizer 
+
+                  if (piece == Piece.CPU) {
+                     // We ask for alpha
+                     if (move.score < alpha) {
+                        return bestMove;
+                     } else {
+                        betha = Math.min(betha, move.score);
+                     }
+                  } else {
+                     // If node is maximizer we ask for betha
+                     if (move.score > betha) {
+                        return bestMove;
+                     } else { 
+                        alpha = Math.max(alpha, move.score);
+                     }
+                  }
                }
             }
          }
 
-if (depthLevel == 0) { 
-   console.log(a);
-   console.log(bestMove);
-}
-
+         if (depthLevel == 0) { 
+            console.log(bestMove);
+         }
          return bestMove;
       },
 
@@ -443,45 +450,38 @@ if (depthLevel == 0) {
          piece = board.getPiece(y, x);
          if (piece == Piece.EMPTY) {
             board.setPiece(y, x, Piece.PLAYER);
-            bestMove = this.simulatePlay(board, Piece.CPU, x, y, 0);
-console.log('best move:', bestMove);
+            bestMove = this.simulatePlay(board, Piece.CPU, x, y, 0, -this._INFINITY, this._INFINITY);
+            console.log('best move:', bestMove);
             board.setPiece(bestMove.row, bestMove.column, Piece.CPU);
          }
       }
    };
 
-   var emptyBoardString = '0 0 0 0 0 0 0 0 0 0\n' + // 0
-                          '0 0 0 0 0 0 0 0 0 0\n' + // 1
-                          '0 0 0 0 2 0 0 0 0 0\n' + // 2
-                          '0 0 0 0 0 0 0 0 0 0\n' + // 3
-                          '0 0 0 0 2 0 0 0 0 0\n' + // 4
-                          '0 0 0 0 2 0 0 0 0 0\n' + // 5
-                          '0 0 0 0 0 0 0 0 0 0\n' + // 6
-                          '0 0 0 0 0 0 0 0 0 0\n' + // 7
-                          '0 0 0 0 0 0 0 0 0 0\n' + // 8
-                          '0 0 0 0 0 0 0 0 0 0';
-
-   var b = new Board();
-   b.fromString(emptyBoardString);
-   console.log(b.evaluate(0));
-   console.log(b.isTerminal());
-
+   var board = new Board();
    var ai = new AI();
-   ai.play(b, 4, 1);
-   console.log(b.toString());
+   var div = null;
+   var processing = false;
 
+   window.play = function (y, x) {
+      if (processing) return;
+      if (board.getPiece(y, x) == Piece.EMPTY) {
+         div.className += 'board-loading';
+         processing = true;
+         setTimeout(setPiece, 100);
+      }
+      
+      function setPiece() { 
+         ai.play(board, x, y);
+         div.className = '';
+         div.innerHTML = board.toHtml();
+         processing = false;
+      }
+   }
+
+   window.initBoard = function (divId) { 
+      div = document.getElementById(divId);
+      div.innerHTML = board.toHtml();
+   }
 })();
 
-/*
- b.fromString('0 0 0 0 0 0 0 0 0 0\n' +  // 0
- '0 0 0 0 0 0 0 0 0 0\n' +  // 1
- '0 0 0 0 0 0 0 0 0 0\n' +  // 2
- '0 0 2 0 0 0 0 0 0 0\n' +  // 3
- '0 0 1 0 0 1 0 0 0 0\n' +  // 4
- '0 0 0 0 1 0 0 0 0 0\n' +  // 5
- '0 0 0 1 0 0 0 0 0 0\n' +  // 6
- '0 0 2 0 0 0 0 0 0 0\n' +  // 7
- '0 2 0 0 0 0 0 0 0 0\n' +  // 8
- '1 0 0 0 0 0 0 0 0 0\n' ); // 9
- */
 
