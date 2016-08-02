@@ -5,6 +5,13 @@ td.board-cell {
    height: 40px;
    text-align: center;
 }
+td.board-cell-high {
+   background-color: #8AE234;
+   border: 1px black solid;
+   width: 40px;
+   height: 40px;
+   text-align: center;
+}
 td.board-cell:hover {
    background-color: #EBC28A;
    border: 1px black solid;
